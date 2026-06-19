@@ -1,0 +1,122 @@
+[
+  {
+    "ward_id": "W01",
+    "ward_name": "Ward 1 (AP-ULB)",
+    "water_supply_capacity_liters_day": 7280280,
+    "stp_capacity_liters_day": 5824224
+  },
+  {
+    "ward_id": "W02",
+    "ward_name": "Ward 2 (AP-ULB)",
+    "water_supply_capacity_liters_day": 7958048,
+    "stp_capacity_liters_day": 6366438
+  },
+  {
+    "ward_id": "W03",
+    "ward_name": "Ward 3 (AP-ULB)",
+    "water_supply_capacity_liters_day": 2409912,
+    "stp_capacity_liters_day": 2048425
+  },
+  {
+    "ward_id": "W04",
+    "ward_name": "Ward 4 (AP-ULB)",
+    "water_supply_capacity_liters_day": 3717495,
+    "stp_capacity_liters_day": 2973996
+  },
+  {
+    "ward_id": "W05",
+    "ward_name": "Ward 5 (AP-ULB)",
+    "water_supply_capacity_liters_day": 6568749,
+    "stp_capacity_liters_day": 5254999
+  },
+  {
+    "ward_id": "W06",
+    "ward_name": "Ward 6 (AP-ULB)",
+    "water_supply_capacity_liters_day": 6955672,
+    "stp_capacity_liters_day": 5564538
+  },
+  {
+    "ward_id": "W07",
+    "ward_name": "Ward 7 (AP-ULB)",
+    "water_supply_capacity_liters_day": 1725408,
+    "stp_capacity_liters_day": 1466597
+  },
+  {
+    "ward_id": "W08",
+    "ward_name": "Ward 8 (AP-ULB)",
+    "water_supply_capacity_liters_day": 4581158,
+    "stp_capacity_liters_day": 3664926
+  },
+  {
+    "ward_id": "W09",
+    "ward_name": "Ward 9 (AP-ULB)",
+    "water_supply_capacity_liters_day": 3213472,
+    "stp_capacity_liters_day": 2570778
+  },
+  {
+    "ward_id": "W10",
+    "ward_name": "Ward 10 (AP-ULB)",
+    "water_supply_capacity_liters_day": 5711607,
+    "stp_capacity_liters_day": 4569286
+  },
+  {
+    "ward_id": "W11",
+    "ward_name": "Ward 11 (AP-ULB)",
+    "water_supply_capacity_liters_day": 6653340,
+    "stp_capacity_liters_day": 5322672
+  },
+  {
+    "ward_id": "W12",
+    "ward_name": "Ward 12 (AP-ULB)",
+    "water_supply_capacity_liters_day": 3209652,
+    "stp_capacity_liters_day": 2728204
+  },
+  {
+    "ward_id": "W13",
+    "ward_name": "Ward 13 (AP-ULB)",
+    "water_supply_capacity_liters_day": 8408408,
+    "stp_capacity_liters_day": 6726726
+  },
+  {
+    "ward_id": "W14",
+    "ward_name": "Ward 14 (AP-ULB)",
+    "water_supply_capacity_liters_day": 8072460,
+    "stp_capacity_liters_day": 6457968
+  },
+  {
+    "ward_id": "W15",
+    "ward_name": "Ward 15 (AP-ULB)",
+    "water_supply_capacity_liters_day": 5624586,
+    "stp_capacity_liters_day": 4499669
+  },
+  {
+    "ward_id": "W16",
+    "ward_name": "Ward 16 (AP-ULB)",
+    "water_supply_capacity_liters_day": 4881262,
+    "stp_capacity_liters_day": 3905010
+  },
+  {
+    "ward_id": "W17",
+    "ward_name": "Ward 17 (AP-ULB)",
+    "water_supply_capacity_liters_day": 8103645,
+    "stp_capacity_liters_day": 6482916
+  },
+  {
+    "ward_id": "W18",
+    "ward_name": "Ward 18 (AP-ULB)",
+    "water_supply_capacity_liters_day": 1948212,
+    "stp_capacity_liters_day": 1655980
+  },
+  {
+    "ward_id": "W19",
+    "ward_name": "Ward 19 (AP-ULB)",
+    "water_supply_capacity_liters_day": 5419508,
+    "stp_capacity_liters_day": 4335606
+  },
+  {
+    "ward_id": "W20",
+    "ward_name": "Ward 20 (AP-ULB)",
+    "water_supply_capacity_liters_day": 5165127,
+    "stp_capacity_liters_day": 4132102
+  }
+]

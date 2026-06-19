@@ -1,0 +1,63 @@
+SMART UTILITY DEMAND FORECASTING SYSTEM (AP-ULB HACKATHON BUILD)
+==================================================================
+
+Follow these steps to set up and run the system locally on Windows.
+
+Prerequisites
+-------------
+1. Python 3.10+
+2. Node.js (with npm)
+
+Step 1: Set Up Backend Environment & Dependencies
+------------------------------------------------
+1. Open PowerShell and navigate to the backend directory:
+   cd backend
+
+2. Install Python dependencies:
+   pip install -r requirements.txt
+
+Step 2: Initialize Database Schema
+----------------------------------
+To run the database in zero-config mode using standard SQLite (recommended for local runs if GDAL is not installed):
+
+1. Run Django migrations:
+   $env:USE_SQLITE="True"
+   python manage.py migrate
+
+Note: If you have PostgreSQL + PostGIS installed, configure environment variables (DB_NAME, DB_USER, etc.) and run standard:
+   python manage.py migrate
+
+Step 3: Run the Machine Learning Forecasting Pipeline
+-----------------------------------------------------
+Run the Prophet training pipeline which populates ward geometries, capacities, and fits Prophet models:
+
+1. Execute forecast script:
+   $env:USE_SQLITE="True"
+   python ml/forecast.py
+
+   This will:
+   a. Import synthetic ward polygons and metadata.
+   b. Precompute Sentinel-2 mock indices (NDVI, NDBI, MNDWI) using `ml/preprocess.py`.
+   c. Fit 40 Prophet models (water + sewage per ward) on 2018–2024 monthly metrics.
+   d. Save the 10-year forecasts to the database.
+   e. Output ranked ward priorities to the console.
+
+Step 4: Launch Django API Server
+--------------------------------
+1. Spin up Django's server on port 8000:
+   $env:USE_SQLITE="True"
+   python manage.py runserver 8000
+
+Step 5: Set Up and Start React Frontend
+---------------------------------------
+1. Open a new terminal and navigate to the frontend directory:
+   cd frontend
+
+2. Install Node dependencies:
+   npm install
+
+3. Run React development server:
+   npm start
+
+   This will open the GIS dashboard automatically in your browser at:
+   http://localhost:3000
