@@ -42,7 +42,7 @@ def populate_database():
     print("\n=== POPULATING DATABASE ===")
     
     fixtures_dir = r"c:\Users\shris\OneDrive\Desktop\smart_city\backend\fixtures"
-    geojson_path = os.path.join(fixtures_dir, "mock_wards.geojson")
+    geojson_path = os.path.join(fixtures_dir, "Vijayawada_Wards.geojson")
     capacity_path = os.path.join(fixtures_dir, "mock_capacity.json")
     usage_path = os.path.join(fixtures_dir, "mock_usage.csv")
     
@@ -55,10 +55,24 @@ def populate_database():
         props = feature['properties']
         geom_json = feature['geometry']
         
+        ward_id = props.get('ward_id') or props.get('WARD_NO')
+        ward_name = props.get('ward_name') or f"Ward {props.get('WARD_NO')}"
+        
+        population = props.get('population')
+        if population is None:
+            import random
+            random.seed(int(props.get('WARD_NO', 1)))
+            population = random.randint(15000, 45000)
+            
+        area_sqkm = props.get('area_sqkm')
+        if area_sqkm is None:
+            # Shape_Area is in decimal degrees. Convert to sq km.
+            area_sqkm = round(props.get('Shape_Area', 0.0) * 11840, 3)
+            
         defaults = {
-            'ward_name': props['ward_name'],
-            'population': props['population'],
-            'area_sqkm': props['area_sqkm'],
+            'ward_name': ward_name,
+            'population': population,
+            'area_sqkm': area_sqkm,
         }
         
         if HAS_GIS:
@@ -68,7 +82,7 @@ def populate_database():
             defaults['geom_json'] = json.dumps(geom_json)
             
         ward, created = Ward.objects.update_or_create(
-            ward_id=props['ward_id'],
+            ward_id=ward_id,
             defaults=defaults
         )
 
@@ -83,20 +97,31 @@ def populate_database():
         )
     print("  Satellite indices updated.")
 
+    # Create mapping from mock ward IDs (W01-W20) to real wards
+    all_wards = list(Ward.objects.all().order_by('ward_id'))
+    mock_to_real_map = {}
+    for i, ward in enumerate(all_wards):
+        mock_id = f"W{(i % 20) + 1:02d}"
+        if mock_id not in mock_to_real_map:
+            mock_to_real_map[mock_id] = []
+        mock_to_real_map[mock_id].append(ward)
+
     # 3. Populating Capacity Records
     print("Populating Infrastructure Capacities...")
     with open(capacity_path, 'r') as f:
         capacity_data = json.load(f)
         
     for cap in capacity_data:
-        ward = Ward.objects.get(ward_id=cap['ward_id'])
-        CapacityRecord.objects.update_or_create(
-            ward=ward,
-            defaults={
-                'water_supply_capacity_liters_day': cap['water_supply_capacity_liters_day'],
-                'stp_capacity_liters_day': cap['stp_capacity_liters_day']
-            }
-        )
+        mock_id = cap['ward_id']
+        target_wards = mock_to_real_map.get(mock_id, [])
+        for ward in target_wards:
+            CapacityRecord.objects.update_or_create(
+                ward=ward,
+                defaults={
+                    'water_supply_capacity_liters_day': cap['water_supply_capacity_liters_day'],
+                    'stp_capacity_liters_day': cap['stp_capacity_liters_day']
+                }
+            )
     print("  Capacity records updated.")
 
     # 4. Populating Historical Usage
@@ -105,17 +130,18 @@ def populate_database():
     with open(usage_path, 'r') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            ward = Ward.objects.get(ward_id=row['ward_id'])
+            mock_id = row['ward_id']
+            target_wards = mock_to_real_map.get(mock_id, [])
             date_val = datetime.strptime(row['date'], "%Y-%m-%d").date()
-            
-            usage_records.append(
-                HistoricalUsage(
-                    ward=ward,
-                    date=date_val,
-                    water_liters_day=float(row['water_liters_day']),
-                    sewage_liters_day=float(row['sewage_liters_day'])
+            for ward in target_wards:
+                usage_records.append(
+                    HistoricalUsage(
+                        ward=ward,
+                        date=date_val,
+                        water_liters_day=float(row['water_liters_day']),
+                        sewage_liters_day=float(row['sewage_liters_day'])
+                    )
                 )
-            )
             
     # Bulk create to make it super fast
     HistoricalUsage.objects.all().delete()

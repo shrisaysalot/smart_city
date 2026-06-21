@@ -86,8 +86,9 @@ def extract_ward_indices(geojson_path, sentinel2_tif_paths=None):
                  ndbi_raster = calculate_ndbi(out_swir[0], out_nir[0])
                  mndwi_raster = calculate_mndwi(out_green[0], out_swir[0])
                  
+                 ward_id_val = row.get('ward_id') or row.get('WARD_NO')
                  results.append({
-                     "ward_id": row['ward_id'],
+                     "ward_id": ward_id_val,
                      "ndvi": float(np.nanmean(ndvi_raster)),
                      "ndbi": float(np.nanmean(ndbi_raster)),
                      "mndwi": float(np.nanmean(mndwi_raster))
@@ -100,9 +101,15 @@ def extract_ward_indices(geojson_path, sentinel2_tif_paths=None):
         # MNDWI (Water Index) around -0.25 to 0.10
         np.random.seed(100)
         for feature in wards_data['features']:
-            w_id = feature['properties']['ward_id']
-            # Higher ward IDs represent denser built-up zones in our mock city
-            ward_num = int(w_id[1:])
+            w_id = feature['properties'].get('ward_id') or feature['properties'].get('WARD_NO')
+            # Safely parse numeric ward number
+            try:
+                if w_id.startswith('W'):
+                    ward_num = int(w_id[1:])
+                else:
+                    ward_num = int(w_id)
+            except Exception:
+                ward_num = 1
             
             # Urban wards: high NDBI, low NDVI
             if ward_num in [3, 7, 12, 18]:
