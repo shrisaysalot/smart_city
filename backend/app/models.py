@@ -59,6 +59,7 @@ class ForecastResult(models.Model):
     forecasted_demand_liters_day = models.FloatField()
     stress_score = models.FloatField()
     stress_tier = models.CharField(max_length=10) # 'low', 'medium', 'high'
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ('ward', 'horizon_years', 'utility_type')

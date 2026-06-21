@@ -2,7 +2,7 @@ import json
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import Ward, CapacityRecord, HistoricalUsage, ForecastTimeSeries, HAS_GIS
+from .models import Ward, CapacityRecord, HistoricalUsage, ForecastTimeSeries, ForecastResult, HAS_GIS
 from .serializers import WardSerializer, CapacityRecordSerializer, HistoricalUsageSerializer, ForecastTimeSeriesSerializer
 
 @api_view(['GET'])
@@ -73,6 +73,10 @@ def get_forecast_detail(request, ward_id):
     except CapacityRecord.DoesNotExist:
         capacity_data = None
 
+    # Retrieve the creation timestamp of the forecast results for this ward
+    last_result = ForecastResult.objects.filter(ward=ward).first()
+    created_at_str = last_result.created_at.isoformat() if last_result and last_result.created_at else None
+
     return Response({
         "ward_id": ward.ward_id,
         "ward_name": ward.ward_name,
@@ -83,5 +87,6 @@ def get_forecast_detail(request, ward_id):
         "mndwi": ward.mndwi,
         "capacity": capacity_data,
         "history": history_serializer.data,
-        "forecast": forecast_serializer.data
+        "forecast": forecast_serializer.data,
+        "forecast_generated_at": created_at_str
     })

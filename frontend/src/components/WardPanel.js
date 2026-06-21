@@ -29,8 +29,16 @@ const WardPanel = ({ selectedWard, viewType, horizonYears, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Scenario Simulator sliders states (default 1.0x)
+  const [popGrowth, setPopGrowth] = useState(1.0);
+  const [urbanExpand, setUrbanExpand] = useState(1.0);
+
   useEffect(() => {
     if (!selectedWard) return;
+
+    // Reset sliders when ward changes
+    setPopGrowth(1.0);
+    setUrbanExpand(1.0);
 
     const fetchDetail = async () => {
       setLoading(true);
@@ -124,6 +132,29 @@ const WardPanel = ({ selectedWard, viewType, horizonYears, onClose }) => {
     stressClass = 'tier-medium';
   }
 
+  // --- Scenario Simulator calculations ---
+  const adjustedDemandLiters = targetDemandLiters * popGrowth * urbanExpand;
+  const adjustedDemandMLD = toMLD(adjustedDemandLiters);
+  const adjustedGapLiters = adjustedDemandLiters - capacityLiters;
+  const adjustedGapMLD = toMLD(adjustedGapLiters);
+  const adjustedStressRatio = adjustedDemandLiters / capacityLiters;
+  const adjustedStressPercent = (adjustedStressRatio * 100).toFixed(1);
+
+  let adjStressTier = 'Low';
+  let adjStressClass = 'tier-low';
+  if (adjustedStressRatio > 0.9) {
+    adjStressTier = 'High';
+    adjStressClass = 'tier-high';
+  } else if (adjustedStressRatio >= 0.7) {
+    adjStressTier = 'Medium';
+    adjStressClass = 'tier-medium';
+  }
+
+  // Format the last forecast generated time
+  const formattedDate = data?.forecast_generated_at
+    ? new Date(data.forecast_generated_at).toLocaleString()
+    : 'N/A';
+
   // --- Prepare Chart Data ---
   // Create unified timeline labels
   const historyLabels = data.history.map(item => {
@@ -143,9 +174,10 @@ const WardPanel = ({ selectedWard, viewType, horizonYears, onClose }) => {
     isWater ? item.water_liters_day / 1000000 : item.sewage_liters_day / 1000000
   );
 
-  const forecastValues = filteredForecast.map(item => 
-    isWater ? item.water_forecast_liters_day / 1000000 : item.sewage_forecast_liters_day / 1000000
-  );
+  const forecastValues = filteredForecast.map(item => {
+    const base = isWater ? item.water_forecast_liters_day / 1000000 : item.sewage_forecast_liters_day / 1000000;
+    return base * popGrowth * urbanExpand;
+  });
 
   // Connect actual history line to the start of forecast line
   const historyDataPoints = [...historyValues, ...Array(forecastLabels.length).fill(null)];
@@ -326,12 +358,140 @@ const WardPanel = ({ selectedWard, viewType, horizonYears, onClose }) => {
           </div>
         </div>
 
+        {/* Scenario Simulator Card */}
+        <div className="scenario-simulator-section" style={{
+          marginTop: '20px',
+          padding: '16px',
+          backgroundColor: 'rgba(30, 41, 59, 0.4)',
+          borderRadius: '12px',
+          border: '1px solid rgba(75, 85, 99, 0.3)',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+        }}>
+          <h3 style={{
+            fontSize: '13px',
+            fontWeight: '600',
+            color: '#60a5fa',
+            marginBottom: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em'
+          }}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+            </svg>
+            Scenario Simulator
+          </h3>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* Slider 1: Population Growth Rate */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#cbd5e1', marginBottom: '4px' }}>
+                <span>Population Growth Rate</span>
+                <span style={{ fontWeight: '600', color: '#60a5fa' }}>{popGrowth.toFixed(1)}x</span>
+              </div>
+              <input
+                type="range"
+                min="0.5"
+                max="2.0"
+                step="0.1"
+                value={popGrowth}
+                onChange={(e) => setPopGrowth(parseFloat(e.target.value))}
+                style={{
+                  width: '100%',
+                  accentColor: '#3b82f6',
+                  cursor: 'pointer'
+                }}
+              />
+            </div>
+
+            {/* Slider 2: Urban Expansion Rate */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#cbd5e1', marginBottom: '4px' }}>
+                <span>Urban Expansion Rate</span>
+                <span style={{ fontWeight: '600', color: '#60a5fa' }}>{urbanExpand.toFixed(1)}x</span>
+              </div>
+              <input
+                type="range"
+                min="0.5"
+                max="2.0"
+                step="0.1"
+                value={urbanExpand}
+                onChange={(e) => setUrbanExpand(parseFloat(e.target.value))}
+                style={{
+                  width: '100%',
+                  accentColor: '#3b82f6',
+                  cursor: 'pointer'
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Adjusted Metrics Display */}
+          <div style={{
+            marginTop: '14px',
+            padding: '12px',
+            backgroundColor: 'rgba(15, 23, 42, 0.5)',
+            borderRadius: '8px',
+            border: '1px solid rgba(75, 85, 99, 0.2)'
+          }}>
+            <div style={{ fontSize: '9px', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em', marginBottom: '8px', fontWeight: '600' }}>
+              Simulated Utility Impact
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Adj. Demand ({2024 + horizonYears})</span>
+              <span style={{ fontSize: '13px', fontWeight: '700', color: '#e2e8f0' }}>{adjustedDemandMLD} MLD</span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Adj. Deficit / Surplus</span>
+              <span style={{
+                fontSize: '13px',
+                fontWeight: '700',
+                color: adjustedGapLiters > 0 ? '#f87171' : '#34d399'
+              }}>
+                {adjustedGapLiters > 0 ? `-${adjustedGapMLD} MLD` : `+${Math.abs(adjustedGapMLD).toFixed(2)} MLD`}
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Adj. Stress Level</span>
+              <span className={`stress-badge-value ${adjStressClass}`} style={{
+                fontSize: '11px',
+                fontWeight: '600',
+                padding: '1px 6px',
+                borderRadius: '4px',
+                backgroundColor: adjStressClass === 'tier-high' ? 'rgba(239, 68, 68, 0.2)' : adjStressClass === 'tier-medium' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                color: adjStressClass === 'tier-high' ? '#fca5a5' : adjStressClass === 'tier-medium' ? '#fde047' : '#a7f3d0'
+              }}>
+                {adjustedStressPercent}% ({adjStressTier})
+              </span>
+            </div>
+          </div>
+        </div>
+
         {/* Time Series Chart */}
         <div className="chart-container">
           <h3>Historical actuals & Prophet demand projection</h3>
           <div className="chart-wrapper">
             <Line data={chartData} options={chartOptions} />
           </div>
+        </div>
+
+        {/* Audit/Traceability Log Footer */}
+        <div className="audit-log-section" style={{
+          marginTop: '24px',
+          paddingTop: '12px',
+          borderTop: '1px solid rgba(75, 85, 99, 0.3)',
+          fontSize: '10px',
+          color: '#94a3b8',
+          fontFamily: 'Inter, sans-serif',
+          lineHeight: '1.4'
+        }}>
+          <div><strong>Last forecast generated:</strong> {formattedDate}</div>
+          <div style={{ marginTop: '2px' }}><strong>Model:</strong> Facebook Prophet | <strong>Data:</strong> Synthetic (PoC)</div>
         </div>
       </div>
     </div>
