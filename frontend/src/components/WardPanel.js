@@ -24,21 +24,13 @@ ChartJS.register(
   Filler
 );
 
-const WardPanel = ({ selectedWard, viewType, horizonYears, onClose }) => {
+const WardPanel = ({ selectedWard, viewType, horizonYears, onClose, popGrowth = 1.0, urbanExpand = 1.0 }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Scenario Simulator sliders states (default 1.0x)
-  const [popGrowth, setPopGrowth] = useState(1.0);
-  const [urbanExpand, setUrbanExpand] = useState(1.0);
-
   useEffect(() => {
     if (!selectedWard) return;
-
-    // Reset sliders when ward changes
-    setPopGrowth(1.0);
-    setUrbanExpand(1.0);
 
     const fetchDetail = async () => {
       setLoading(true);
@@ -123,32 +115,13 @@ const WardPanel = ({ selectedWard, viewType, horizonYears, onClose }) => {
 
   // Determine stress tier
   let stressTier = 'Low';
-  let stressClass = 'tier-low';
   if (stressRatio > 0.9) {
     stressTier = 'High';
-    stressClass = 'tier-high';
   } else if (stressRatio >= 0.7) {
     stressTier = 'Medium';
-    stressClass = 'tier-medium';
   }
 
   // --- Scenario Simulator calculations ---
-  const adjustedDemandLiters = targetDemandLiters * popGrowth * urbanExpand;
-  const adjustedDemandMLD = toMLD(adjustedDemandLiters);
-  const adjustedGapLiters = adjustedDemandLiters - capacityLiters;
-  const adjustedGapMLD = toMLD(adjustedGapLiters);
-  const adjustedStressRatio = adjustedDemandLiters / capacityLiters;
-  const adjustedStressPercent = (adjustedStressRatio * 100).toFixed(1);
-
-  let adjStressTier = 'Low';
-  let adjStressClass = 'tier-low';
-  if (adjustedStressRatio > 0.9) {
-    adjStressTier = 'High';
-    adjStressClass = 'tier-high';
-  } else if (adjustedStressRatio >= 0.7) {
-    adjStressTier = 'Medium';
-    adjStressClass = 'tier-medium';
-  }
 
   // Format the last forecast generated time
   const formattedDate = data?.forecast_generated_at
@@ -195,22 +168,22 @@ const WardPanel = ({ selectedWard, viewType, horizonYears, onClose }) => {
       {
         label: 'Historical Actual',
         data: historyDataPoints,
-        borderColor: isWater ? '#2563eb' : '#7c3aed',
-        backgroundColor: isWater ? 'rgba(37, 99, 235, 0.1)' : 'rgba(124, 58, 237, 0.1)',
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.03)',
         fill: true,
         tension: 0.3,
-        borderWidth: 3,
+        borderWidth: 2,
         pointRadius: 0,
         pointHoverRadius: 4,
       },
       {
         label: `${horizonYears}-Yr Forecast`,
         data: forecastDataPoints,
-        borderColor: isWater ? '#60a5fa' : '#c084fc',
+        borderColor: '#f59e0b',
         backgroundColor: 'transparent',
-        borderDash: [5, 5],
+        borderDash: [5, 3],
         tension: 0.3,
-        borderWidth: 3,
+        borderWidth: 2,
         pointRadius: 0,
         pointHoverRadius: 4,
       },
@@ -218,7 +191,7 @@ const WardPanel = ({ selectedWard, viewType, horizonYears, onClose }) => {
         label: 'Design Capacity Limit',
         data: capacityDataPoints,
         borderColor: '#ef4444',
-        borderWidth: 2,
+        borderWidth: 1.5,
         borderDash: [3, 3],
         pointRadius: 0,
         fill: false,
@@ -262,10 +235,10 @@ const WardPanel = ({ selectedWard, viewType, horizonYears, onClose }) => {
     },
     scales: {
       x: {
-        grid: { color: 'rgba(75, 85, 99, 0.15)' },
+        grid: { color: 'rgba(255, 255, 255, 0.04)' },
         ticks: {
-          color: '#9ca3af',
-          font: { size: 9 },
+          color: '#475569',
+          font: { size: 11 },
           maxTicksLimit: 12
         }
       },
@@ -273,18 +246,20 @@ const WardPanel = ({ selectedWard, viewType, horizonYears, onClose }) => {
         title: {
           display: true,
           text: 'Quantity (MLD)',
-          color: '#9ca3af',
-          font: { family: 'Outfit', size: 10 }
+          color: '#475569',
+          font: { family: 'Outfit', size: 11 }
         },
-        grid: { color: 'rgba(75, 85, 99, 0.15)' },
-        ticks: { color: '#9ca3af', font: { size: 10 } }
+        grid: { color: 'rgba(255, 255, 255, 0.04)' },
+        ticks: { color: '#475569', font: { size: 11 } }
       }
     }
   };
 
+  const headerBorderColor = stressTier === 'High' ? '#ef4444' : stressTier === 'Medium' ? '#f59e0b' : '#22c55e';
+
   return (
     <div className="ward-panel">
-      <div className="ward-panel-header">
+      <div className="ward-panel-header" style={{ borderLeft: `4px solid ${headerBorderColor}`, paddingLeft: '20px' }}>
         <div>
           <h2>{data.ward_name}</h2>
           <span className="ward-id-pill">{data.ward_id}</span>
@@ -328,9 +303,46 @@ const WardPanel = ({ selectedWard, viewType, horizonYears, onClose }) => {
         <div className="metric-summary">
           <h3>{isWater ? 'Water Supply' : 'Sewerage Treatment'} Gap Analysis</h3>
           
-          <div className={`stress-badge ${stressClass}`}>
-            <span className="stress-badge-title">Stress Level</span>
-            <span className="stress-badge-value">{stressPercent}% ({stressTier})</span>
+          <div className="stress-progress-container" style={{
+            marginBottom: '16px',
+            fontFamily: 'Outfit, sans-serif'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontSize: '11px',
+              color: '#cbd5e1',
+              marginBottom: '6px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              fontWeight: '600'
+            }}>
+              <span>Stress Level</span>
+              <span style={{
+                color: stressTier === 'High' ? '#f87171' : stressTier === 'Medium' ? '#fbbf24' : '#34d399'
+              }}>
+                {stressPercent}% {stressTier.toUpperCase()}
+              </span>
+            </div>
+            
+            {/* Progress Bar Track */}
+            <div style={{
+              width: '100%',
+              height: '8px',
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              borderRadius: '4px',
+              overflow: 'hidden'
+            }}>
+              {/* Progress Bar Fill */}
+              <div style={{
+                width: `${Math.min(100, parseFloat(stressPercent))}%`,
+                height: '100%',
+                backgroundColor: stressTier === 'High' ? '#ef4444' : stressTier === 'Medium' ? '#f59e0b' : '#22c55e',
+                borderRadius: '4px',
+                transition: 'width 0.4s ease'
+              }}></div>
+            </div>
           </div>
 
           <div className="metric-row">
@@ -358,124 +370,11 @@ const WardPanel = ({ selectedWard, viewType, horizonYears, onClose }) => {
           </div>
         </div>
 
-        {/* Scenario Simulator Card */}
-        <div className="scenario-simulator-section" style={{
-          marginTop: '20px',
-          padding: '16px',
-          backgroundColor: 'rgba(30, 41, 59, 0.4)',
-          borderRadius: '12px',
-          border: '1px solid rgba(75, 85, 99, 0.3)',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-        }}>
-          <h3 style={{
-            fontSize: '13px',
-            fontWeight: '600',
-            color: '#60a5fa',
-            marginBottom: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em'
-          }}>
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
-            </svg>
-            Scenario Simulator
-          </h3>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {/* Slider 1: Population Growth Rate */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#cbd5e1', marginBottom: '4px' }}>
-                <span>Population Growth Rate</span>
-                <span style={{ fontWeight: '600', color: '#60a5fa' }}>{popGrowth.toFixed(1)}x</span>
-              </div>
-              <input
-                type="range"
-                min="0.5"
-                max="2.0"
-                step="0.1"
-                value={popGrowth}
-                onChange={(e) => setPopGrowth(parseFloat(e.target.value))}
-                style={{
-                  width: '100%',
-                  accentColor: '#3b82f6',
-                  cursor: 'pointer'
-                }}
-              />
-            </div>
-
-            {/* Slider 2: Urban Expansion Rate */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#cbd5e1', marginBottom: '4px' }}>
-                <span>Urban Expansion Rate</span>
-                <span style={{ fontWeight: '600', color: '#60a5fa' }}>{urbanExpand.toFixed(1)}x</span>
-              </div>
-              <input
-                type="range"
-                min="0.5"
-                max="2.0"
-                step="0.1"
-                value={urbanExpand}
-                onChange={(e) => setUrbanExpand(parseFloat(e.target.value))}
-                style={{
-                  width: '100%',
-                  accentColor: '#3b82f6',
-                  cursor: 'pointer'
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Adjusted Metrics Display */}
-          <div style={{
-            marginTop: '14px',
-            padding: '12px',
-            backgroundColor: 'rgba(15, 23, 42, 0.5)',
-            borderRadius: '8px',
-            border: '1px solid rgba(75, 85, 99, 0.2)'
-          }}>
-            <div style={{ fontSize: '9px', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em', marginBottom: '8px', fontWeight: '600' }}>
-              Simulated Utility Impact
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Adj. Demand ({2024 + horizonYears})</span>
-              <span style={{ fontSize: '13px', fontWeight: '700', color: '#e2e8f0' }}>{adjustedDemandMLD} MLD</span>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Adj. Deficit / Surplus</span>
-              <span style={{
-                fontSize: '13px',
-                fontWeight: '700',
-                color: adjustedGapLiters > 0 ? '#f87171' : '#34d399'
-              }}>
-                {adjustedGapLiters > 0 ? `-${adjustedGapMLD} MLD` : `+${Math.abs(adjustedGapMLD).toFixed(2)} MLD`}
-              </span>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Adj. Stress Level</span>
-              <span className={`stress-badge-value ${adjStressClass}`} style={{
-                fontSize: '11px',
-                fontWeight: '600',
-                padding: '1px 6px',
-                borderRadius: '4px',
-                backgroundColor: adjStressClass === 'tier-high' ? 'rgba(239, 68, 68, 0.2)' : adjStressClass === 'tier-medium' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)',
-                color: adjStressClass === 'tier-high' ? '#fca5a5' : adjStressClass === 'tier-medium' ? '#fde047' : '#a7f3d0'
-              }}>
-                {adjustedStressPercent}% ({adjStressTier})
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Time Series Chart */}
-        <div className="chart-container">
-          <h3>Historical actuals & Prophet demand projection</h3>
-          <div className="chart-wrapper">
+        {/* Time Series Chart Section (Always Visible) */}
+        <div className="chart-container" style={{ minHeight: '220px' }}>
+          <h3 style={{ marginTop: '12px' }}>Historical actuals & Prophet demand projection</h3>
+          <div className="chart-wrapper" style={{ height: '220px', minHeight: '220px' }}>
             <Line data={chartData} options={chartOptions} />
           </div>
         </div>

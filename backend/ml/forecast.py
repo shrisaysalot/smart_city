@@ -129,11 +129,14 @@ def populate_database():
         water_headroom = random.uniform(0.85, 1.45)
         water_capacity = (ward_demand_2024_liters / 0.73) * water_headroom
         
-        # STP capacity = sewage_2024 * 1.1 for most wards, but make 20% of wards already at or over capacity (<1.0)
-        if i % 5 == 0:
-            stp_headroom = random.uniform(0.80, 0.98)
+        # STP capacity: comfortable headroom (60%), medium stress (25%), high stress (15%)
+        r = random.random()
+        if r < 0.60:
+            stp_headroom = random.uniform(1.3, 1.8)
+        elif r < 0.85:
+            stp_headroom = random.uniform(1.0, 1.3)
         else:
-            stp_headroom = random.uniform(1.05, 1.15)
+            stp_headroom = random.uniform(0.85, 1.0)
             
         stp_capacity = sewage_2024_liters * stp_headroom
         

@@ -17,7 +17,7 @@ const MapView = ({ wardsGeojson, selectedWard, onSelectWard, viewType, horizonYe
         fillColor: '#9ca3af',
         weight: isSelected ? 3 : 1.5,
         opacity: 1,
-        color: isSelected ? '#ffffff' : '#374151',
+        color: isSelected ? '#3b82f6' : '#374151',
         fillOpacity: 0.4,
       };
     }
@@ -34,9 +34,9 @@ const MapView = ({ wardsGeojson, selectedWard, onSelectWard, viewType, horizonYe
 
     return {
       fillColor: fillColor,
-      weight: isSelected ? 3.5 : 1.5,
+      weight: isSelected ? 3 : 1.5,
       opacity: 1,
-      color: isSelected ? '#ffffff' : '#1f2937',
+      color: isSelected ? '#3b82f6' : '#1f2937',
       fillOpacity: isSelected ? 0.8 : 0.55,
     };
   };
@@ -46,7 +46,8 @@ const MapView = ({ wardsGeojson, selectedWard, onSelectWard, viewType, horizonYe
     const stressData = props?.stress_data;
     const scoreInfo = stressData?.[viewType]?.[horizonYears.toString()];
     const scoreVal = scoreInfo ? (scoreInfo.score * 100).toFixed(1) : '0.0';
-    const tier = scoreInfo ? scoreInfo.tier.toUpperCase() : 'UNKNOWN';
+    const demandLiters = scoreInfo ? scoreInfo.demand : 0;
+    const demandMLD = (demandLiters / 1000000).toFixed(2);
 
     // Hover effect
     layer.on({
@@ -54,8 +55,8 @@ const MapView = ({ wardsGeojson, selectedWard, onSelectWard, viewType, horizonYe
         const l = e.target;
         l.setStyle({
           fillOpacity: 0.85,
-          weight: selectedWard && selectedWard.ward_id === props.ward_id ? 3.5 : 2.5,
-          color: selectedWard && selectedWard.ward_id === props.ward_id ? '#ffffff' : '#f3f4f6'
+          weight: 2,
+          color: '#ffffff'
         });
       },
       mouseout: (e) => {
@@ -68,13 +69,29 @@ const MapView = ({ wardsGeojson, selectedWard, onSelectWard, viewType, horizonYe
       },
     });
 
-    // Dynamic label bindings
-    layer.bindTooltip(
-      `<strong>${props.ward_name}</strong><br/>
-       Pop: ${props.population.toLocaleString()}<br/>
-       Stress Score: ${scoreVal}% (${tier})`,
-      { sticky: true, className: 'map-tooltip' }
-    );
+    const wardName = props.ward_name;
+    const stressPercent = scoreVal;
+    const score = scoreInfo ? scoreInfo.score : 0;
+    let stressColor = '#10b981';
+    if (score > 0.9) {
+      stressColor = '#ef4444';
+    } else if (score >= 0.7) {
+      stressColor = '#f59e0b';
+    }
+    const stressTier = scoreInfo && scoreInfo.tier
+      ? scoreInfo.tier.charAt(0).toUpperCase() + scoreInfo.tier.slice(1).toLowerCase()
+      : 'Unknown';
+    const demand = demandMLD;
+
+    layer.bindTooltip(`
+      <div style="background:#0f172a;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;font-family:inherit;min-width:180px">
+        <div style="font-size:13px;font-weight:600;color:#f1f5f9;margin-bottom:6px">${wardName}</div>
+        <div style="font-size:11px;color:#64748b;margin-bottom:2px">Stress Level</div>
+        <div style="font-size:13px;color:${stressColor};font-weight:500">${stressPercent}% ${stressTier}</div>
+        <div style="font-size:11px;color:#64748b;margin-top:4px;margin-bottom:2px">Projected Demand</div>
+        <div style="font-size:13px;color:#f1f5f9">${demand} MLD</div>
+      </div>
+    `, { className: 'custom-tooltip', sticky: true, opacity: 1 });
   };
 
   return (

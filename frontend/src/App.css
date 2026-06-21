@@ -41,6 +41,16 @@ body {
   height: 100vh;
 }
 
+/* Top thin accent line */
+.app-container::before {
+  content: '';
+  display: block;
+  height: 2px;
+  background-color: #3b82f6;
+  width: 100%;
+  z-index: 1001;
+}
+
 /* Premium Header styling */
 .app-header {
   background-color: var(--bg-header);
@@ -49,6 +59,23 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stat-chip {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: #94a3b8;
+  font-family: var(--font-body);
+  font-weight: 500;
 }
 
 .header-brand {
@@ -116,8 +143,8 @@ body {
 
 /* Control Console Styles */
 .control-console {
-  background-color: rgba(18, 22, 31, 0.85);
-  border-bottom: 1px solid var(--border-card);
+  background-color: #0f172a;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
   padding: 0.75rem 1.75rem;
   display: flex;
   flex-wrap: wrap;
@@ -133,11 +160,11 @@ body {
 
 .control-label {
   font-family: var(--font-display);
-  font-size: 0.75rem;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
-  color: var(--text-muted);
-  letter-spacing: 0.05em;
+  color: #475569;
+  letter-spacing: 0.12em;
 }
 
 /* Toggle Buttons */
@@ -151,32 +178,68 @@ body {
 
 .toggle-btn, .tab-btn {
   background: transparent;
-  border: none;
-  color: var(--text-secondary);
+  color: #64748b;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
   font-family: var(--font-body);
   font-size: 0.8rem;
   font-weight: 500;
   padding: 0.4rem 0.95rem;
-  border-radius: 6px;
   cursor: pointer;
-  transition: all var(--transition-speed);
+  transition: all 0.2s ease;
 }
 
 .toggle-btn:hover, .tab-btn:hover {
-  color: var(--text-primary);
+  color: #f8fafc;
+  border-color: rgba(255,255,255,0.2);
 }
 
-.toggle-btn.active {
-  background-color: var(--color-accent);
-  color: #ffffff;
+.toggle-btn.active, .tab-btn.active {
+  background-color: #3b82f6 !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 6px;
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
 }
 
-.tab-btn.active {
-  background-color: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: var(--text-primary);
+/* City-wide summary bar styling */
+.city-summary-bar {
+  background-color: #0a0f1e;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding: 6px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-body);
+  font-size: 11px;
+}
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.summary-label {
+  color: #475569;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.summary-value {
+  color: #ffffff;
+  font-weight: 700;
+}
+.summary-value.high {
+  color: #ef4444;
+}
+.summary-value.medium {
+  color: #f59e0b;
+}
+.summary-value.low {
+  color: #22c55e;
+}
+.summary-divider {
+  color: #1e293b;
+  font-weight: bold;
 }
 
 /* Main Layout Grid */
@@ -202,6 +265,7 @@ body {
   height: 100%;
   width: 100%;
   min-height: 500px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
 }
 
 /* Sidebar panel layout */
@@ -223,8 +287,8 @@ body {
   bottom: 24px;
   left: 24px;
   z-index: 1000;
-  background-color: rgba(18, 22, 31, 0.9);
-  backdrop-filter: blur(10px);
+  background-color: rgba(10, 15, 30, 0.85);
+  backdrop-filter: blur(8px);
   border: 1px solid var(--border-card);
   padding: 0.85rem 1rem;
   border-radius: 12px;
@@ -256,9 +320,9 @@ body {
 
 .legend-color {
   display: inline-block;
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
 }
 
 .legend-color.high { background-color: var(--color-red); }
@@ -273,26 +337,27 @@ body {
 .synthetic-badge {
   display: block;
   text-align: center;
-  font-size: 0.6rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  border-top: 1px solid var(--border-card);
-  padding-top: 0.4rem;
+  font-size: 9px;
+  color: #334155;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  margin-top: 8px;
+  padding-top: 6px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 /* Custom Map Tooltip Styling */
-.map-tooltip {
-  background-color: #1e293b !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  color: var(--text-primary) !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
-  font-family: var(--font-body);
-  font-size: 0.75rem !important;
-  padding: 6px 10px !important;
-  border-radius: 6px !important;
-  opacity: 0.95 !important;
+.custom-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important;
+}
+.custom-tooltip:before {
+  display: none !important;
+}
+.custom-tooltip .leaflet-tooltip-top:before,
+.custom-tooltip .leaflet-tooltip-bottom:before {
+  display: none !important;
 }
 
 /* Sidebar Details: WardPanel */
@@ -397,8 +462,9 @@ body {
 }
 
 .info-card {
-  background-color: var(--bg-card);
+  background-color: #0f172a !important;
   border: 1px solid var(--border-card);
+  border-top: 2px solid rgba(59, 130, 246, 0.4) !important;
   border-radius: 10px;
   padding: 0.75rem 1rem;
 }
@@ -427,6 +493,8 @@ body {
   letter-spacing: 0.05em;
   color: var(--text-secondary);
   margin-bottom: 0.65rem;
+  border-left: 2px solid #3b82f6;
+  padding-left: 8px;
 }
 
 .indices-grid {
@@ -458,14 +526,15 @@ body {
   font-weight: 700;
 }
 
-.idx-val.veg { color: var(--color-green); }
-.idx-val.built { color: var(--color-yellow); }
-.idx-val.water { color: var(--color-accent); }
+.idx-val.veg { color: #22c55e; }
+.idx-val.built { color: #f59e0b; }
+.idx-val.water { color: #38bdf8; }
 
 /* Metric Summary */
 .metric-summary {
-  background-color: rgba(30, 41, 59, 0.25);
+  background-color: #0f172a !important;
   border: 1px solid var(--border-card);
+  border-top: 2px solid rgba(59, 130, 246, 0.4) !important;
   border-radius: 12px;
   padding: 1rem;
 }
