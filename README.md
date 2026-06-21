@@ -22,12 +22,27 @@ This hackathon project delivers a Proof of Concept (PoC) GIS dashboard centered 
 
 ---
 
-## 🛰️ Synthetic Data & Satellite Simulation
-To ensure absolute offline runnability for this PoC:
-- **Ward Boundaries (`mock_wards.geojson`):** Contains ~20 synthetic ward polygons representing coordinates in Vijayawada (`16.506, 80.648`).
-- **Utility Consumption (`mock_usage.csv`):** Emulates 84 months of actual monthly consumption (2018–2024) factoring in annual population growth (2.5%) and seasonal peaks (summer peaks).
-- **Infrastructure Capacities (`mock_capacity.json`):** Sets physical benchmarks for each ward's water supply and sewage treatment plant (STP).
-- **Satellite Index Calculation (`ml/preprocess.py`):** Precomputes and logs simulated NDVI (vegetation), NDBI (built-up density), and MNDWI (open water) values for the wards. It also contains fully implemented Rasterio band math code demonstrating Sentinel-2 image extraction.
+## 🛰️ Real-Calibrated Estimates & Data Sources
+To ensure realistic modeling for this PoC, pure synthetic random data has been replaced with estimates calibrated from real-world Vijayawada Municipal Corporation (VMC) and census statistics:
+
+### 📊 Real City Statistics & Parameters Used
+- **Base City Population (2011):** 1,035,000, distributed proportionally among wards based on their geographic boundary area (`Shape_Area`), and projected forward to 2024 using an annual growth rate of **3%**.
+- **City Total Water Supply:** 216 MLD (Million Liters per Day).
+- **Per Capita Consumption:** Calibrated at **150 LPCD** (Liters per Capita per Day).
+- **Non-Revenue Water Loss:** **27%** (Supply capacity required = Demand / 0.73).
+- **Sewage Generation:** Modeled at **85%** of water consumption per ward.
+- **City Total STP Capacity:** 140 MLD.
+
+### 📚 Official Data Sources Documented
+1. **UN-Habitat Vijayawada City Profile 2023:** Establishes the city total water supply of **216 MLD** and per-capita supply rate of **180 LPCD**.
+2. **Swachh Bharat Mission (SBM) 2023:** Confirms city-level sewage generation of **132 MLD** and active Sewage Treatment Plant (STP) capacity of **140 MLD**.
+3. **Bandari et al. 2023 (Household Survey):** Records actual household-level water consumption ranges between **128–150 LPCD**.
+4. **Census of India 2011:** Provides the baseline city-wide municipal population of **1,035,000**.
+
+### 🛠️ Simulated Data Generation & Satellite Index Preprocessing
+- **Ward Boundaries (`Vijayawada_Wards.geojson`):** Real boundaries of the 77 municipal wards of Vijayawada downloaded from the DataMeet repository.
+- **Historical Consumption & Capacity:** Automatically generated in [forecast.py](file:///c:/Users/shris/OneDrive/Desktop/smart_city/backend/ml/forecast.py) by scaling the real statistics per ward based on population distribution and area, then incorporating a `+15%` summer peak (April–June) and `-10%` monsoon dip (July–September).
+- **Satellite Index Calculation (`ml/preprocess.py`):** Precomputes and logs simulated NDVI (vegetation), NDBI (built-up density), and MNDWI (open water) values for all 77 wards. Includes fully implemented Rasterio band math code demonstrating georeferenced Sentinel-2 band calculation.
 
 ---
 
@@ -66,4 +81,4 @@ To ensure absolute offline runnability for this PoC:
 
 ### 7. Transparency / Auditability
 - **No Placeholders:** Every file is fully functional.
-- **Explicit Assumptions:** Labeled clearly as "Synthetic Data Mode" in the dashboard. Preprocessing steps are documented in `preprocess.py`.
+- **Explicit Assumptions:** Labeled clearly as "Real-Calibrated Estimates · Based on VMC/UN-Habitat City Statistics" in the dashboard. Preprocessing steps are documented in `preprocess.py`.

@@ -4,7 +4,7 @@ import json
 import csv
 import pandas as pd
 import numpy as np
-from datetime import datetime
+from datetime import datetime, date
 import warnings
 
 # Suppress Pyarrow, Prophet, and other runtime warnings
@@ -43,14 +43,19 @@ def populate_database():
     
     fixtures_dir = r"c:\Users\shris\OneDrive\Desktop\smart_city\backend\fixtures"
     geojson_path = os.path.join(fixtures_dir, "Vijayawada_Wards.geojson")
-    capacity_path = os.path.join(fixtures_dir, "mock_capacity.json")
-    usage_path = os.path.join(fixtures_dir, "mock_usage.csv")
     
     # 1. Populating Wards
     print("Populating Wards from GeoJSON...")
     with open(geojson_path, 'r') as f:
         wards_data = json.load(f)
         
+    # Calculate total Shape_Area to distribute population proportionally
+    total_area = sum(feature['properties'].get('Shape_Area', 0.0) for feature in wards_data['features'])
+    if total_area == 0:
+        total_area = 1.0 # fallback
+        
+    created_wards = []
+    
     for feature in wards_data['features']:
         props = feature['properties']
         geom_json = feature['geometry']
@@ -58,16 +63,18 @@ def populate_database():
         ward_id = props.get('ward_id') or props.get('WARD_NO')
         ward_name = props.get('ward_name') or f"Ward {props.get('WARD_NO')}"
         
-        population = props.get('population')
-        if population is None:
-            import random
-            random.seed(int(props.get('WARD_NO', 1)))
-            population = random.randint(15000, 45000)
-            
+        # Distribute 2011 city population (1,035,000) proportionally by Shape_Area
+        shape_area = props.get('Shape_Area', 0.0)
+        ward_area_ratio = shape_area / total_area
+        ward_pop_2011 = 1035000 * ward_area_ratio
+        
+        # Grow at 3% per year from 2011 to 2024 (13 years)
+        population = int(ward_pop_2011 * (1.03 ** 13))
+        
         area_sqkm = props.get('area_sqkm')
         if area_sqkm is None:
             # Shape_Area is in decimal degrees. Convert to sq km.
-            area_sqkm = round(props.get('Shape_Area', 0.0) * 11840, 3)
+            area_sqkm = round(shape_area * 11840, 3)
             
         defaults = {
             'ward_name': ward_name,
@@ -85,6 +92,7 @@ def populate_database():
             ward_id=ward_id,
             defaults=defaults
         )
+        created_wards.append(ward)
 
     # 2. Extracting & Populating Satellite Indices
     print("Extracting and populating satellite indices...")
@@ -97,55 +105,79 @@ def populate_database():
         )
     print("  Satellite indices updated.")
 
-    # Create mapping from mock ward IDs (W01-W20) to real wards
-    all_wards = list(Ward.objects.all().order_by('ward_id'))
-    mock_to_real_map = {}
-    for i, ward in enumerate(all_wards):
-        mock_id = f"W{(i % 20) + 1:02d}"
-        if mock_id not in mock_to_real_map:
-            mock_to_real_map[mock_id] = []
-        mock_to_real_map[mock_id].append(ward)
-
-    # 3. Populating Capacity Records
-    print("Populating Infrastructure Capacities...")
-    with open(capacity_path, 'r') as f:
-        capacity_data = json.load(f)
-        
-    for cap in capacity_data:
-        mock_id = cap['ward_id']
-        target_wards = mock_to_real_map.get(mock_id, [])
-        for ward in target_wards:
-            CapacityRecord.objects.update_or_create(
-                ward=ward,
-                defaults={
-                    'water_supply_capacity_liters_day': cap['water_supply_capacity_liters_day'],
-                    'stp_capacity_liters_day': cap['stp_capacity_liters_day']
-                }
-            )
-    print("  Capacity records updated.")
-
-    # 4. Populating Historical Usage
-    print("Populating Historical Usage (this may take a few seconds)...")
+    # 3. Populating Capacity Records & 4. Populating Historical Usage
+    print("Generating and Populating capacities & historical usage based on real statistics...")
+    
+    # Clear old capacities and usages
+    CapacityRecord.objects.all().delete()
+    HistoricalUsage.objects.all().delete()
+    
     usage_records = []
-    with open(usage_path, 'r') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            mock_id = row['ward_id']
-            target_wards = mock_to_real_map.get(mock_id, [])
-            date_val = datetime.strptime(row['date'], "%Y-%m-%d").date()
-            for ward in target_wards:
+    import random
+    
+    for i, ward in enumerate(created_wards):
+        # Base population at 2024
+        population_2024 = ward.population
+        
+        # Calculate 2024 average water demand (150 LPCD)
+        ward_demand_2024_liters = population_2024 * 150
+        sewage_2024_liters = ward_demand_2024_liters * 0.85
+        
+        # 1. Capacity Record
+        # Water supply capacity = (ward_demand_2024 / 0.73) * headroom (20% average, vary per ward, non-revenue water loss: 27%)
+        random.seed(int(ward.ward_id))
+        water_headroom = random.uniform(0.85, 1.45)
+        water_capacity = (ward_demand_2024_liters / 0.73) * water_headroom
+        
+        # STP capacity = sewage_2024 * 1.1 for most wards, but make 20% of wards already at or over capacity (<1.0)
+        if i % 5 == 0:
+            stp_headroom = random.uniform(0.80, 0.98)
+        else:
+            stp_headroom = random.uniform(1.05, 1.15)
+            
+        stp_capacity = sewage_2024_liters * stp_headroom
+        
+        CapacityRecord.objects.create(
+            ward=ward,
+            water_supply_capacity_liters_day=water_capacity,
+            stp_capacity_liters_day=stp_capacity
+        )
+        
+        # 2. Historical Usage (2018-2024 monthly)
+        for year in range(2018, 2025):
+            # Scale population back by 3% annually for previous years
+            pop_year = int(population_2024 / (1.03 ** (2024 - year)))
+            
+            for month in range(1, 13):
+                date_val = date(year, month, 1)
+                base_demand_liters = pop_year * 150
+                
+                # Seasonal variation: +15% in summer (April-June), -10% in monsoon (July-Sept)
+                if month in [4, 5, 6]:
+                    season_factor = 1.15
+                elif month in [7, 8, 9]:
+                    season_factor = 0.90
+                else:
+                    season_factor = 1.0
+                    
+                # Random noise (±3%)
+                noise = random.uniform(-0.03, 0.03)
+                
+                water_liters = base_demand_liters * season_factor * (1.0 + noise)
+                sewage_liters = water_liters * 0.85
+                
                 usage_records.append(
                     HistoricalUsage(
                         ward=ward,
                         date=date_val,
-                        water_liters_day=float(row['water_liters_day']),
-                        sewage_liters_day=float(row['sewage_liters_day'])
+                        water_liters_day=water_liters,
+                        sewage_liters_day=sewage_liters
                     )
                 )
-            
-    # Bulk create to make it super fast
-    HistoricalUsage.objects.all().delete()
+                
+    # Bulk create historical usage records
     HistoricalUsage.objects.bulk_create(usage_records)
+    print(f"  Successfully generated and loaded {len(created_wards)} capacity records.")
     print(f"  Successfully loaded {len(usage_records)} historical usage records.")
 
 def train_and_predict():

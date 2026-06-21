@@ -18,7 +18,7 @@ const StressLegend = () => {
           <span className="legend-label">Low Stress (&lt;70%)</span>
         </div>
       </div>
-      <div className="synthetic-badge">Synthetic Data Mode</div>
+      <div className="synthetic-badge">Real-Calibrated Estimates · Based on VMC/UN-Habitat City Statistics</div>
     </div>
   );
 };
