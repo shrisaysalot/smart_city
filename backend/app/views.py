@@ -90,3 +90,54 @@ def get_forecast_detail(request, ward_id):
         "forecast": forecast_serializer.data,
         "forecast_generated_at": created_at_str
     })
+
+from django.contrib.auth import authenticate, login, logout
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+
+@csrf_exempt
+def login_view(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        user = authenticate(username=data['username'], password=data['password'])
+        if user:
+            login(request, user)
+            try:
+                profile = user.userprofile
+                role = profile.role
+                assigned_wards = profile.assigned_wards
+            except:
+                role = 'admin'
+                assigned_wards = []
+            return JsonResponse({
+                'success': True,
+                'username': user.username,
+                'name': user.get_full_name() or user.username,
+                'role': role,
+                'assigned_wards': assigned_wards,
+            })
+        return JsonResponse({'success': False, 'error': 'Invalid credentials'}, status=401)
+
+@csrf_exempt
+def logout_view(request):
+    logout(request)
+    return JsonResponse({'success': True})
+
+def me_view(request):
+    if request.user.is_authenticated:
+        try:
+            profile = request.user.userprofile
+            role = profile.role
+            assigned_wards = profile.assigned_wards
+        except:
+            role = 'admin'
+            assigned_wards = []
+        return JsonResponse({
+            'authenticated': True,
+            'username': request.user.username,
+            'name': request.user.get_full_name() or request.user.username,
+            'role': role,
+            'assigned_wards': assigned_wards,
+        })
+    return JsonResponse({'authenticated': False})

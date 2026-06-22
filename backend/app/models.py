@@ -80,3 +80,18 @@ class ForecastTimeSeries(models.Model):
 
     def __str__(self):
         return f"{self.ward.ward_id} Forecast - {self.date}"
+
+from django.contrib.auth.models import User
+
+class UserProfile(models.Model):
+    ROLES = [
+        ('admin', 'Admin'),
+        ('planner', 'Planner'),
+        ('engineer', 'Engineer'),
+    ]
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    role = models.CharField(max_length=20, choices=ROLES, default='planner')
+    assigned_wards = models.JSONField(default=list, blank=True)  # for engineers: list of ward IDs they can see
+
+    def __str__(self):
+        return f"{self.user.username} ({self.role})"
